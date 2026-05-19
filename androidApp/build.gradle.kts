@@ -12,7 +12,7 @@ android {
     defaultConfig {
         applicationId = "org.blackcandy.androidApp"
         minSdk = 28
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 7
         versionName = "2.0.2"
 
