@@ -25,6 +25,8 @@ struct AlertMessageCover {
             return String(localized: "text.unsupported_app")
         case .addedToPlaylist:
             return String(localized: "text.added_to_playlist")
+        case .songUnavailable:
+            return String(localized: "text.song_unavailable")
         }
     }
 }

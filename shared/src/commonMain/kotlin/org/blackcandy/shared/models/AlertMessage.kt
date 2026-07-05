@@ -6,6 +6,7 @@ sealed class AlertMessage {
         UNSUPPORTED_SERVER,
         UNSUPPORTED_APP,
         ADDED_TO_PLAYLIST,
+        SONG_UNAVAILABLE,
     }
 
     data class String(

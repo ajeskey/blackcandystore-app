@@ -275,14 +275,17 @@ actual class MusicServiceController(
         MediaItem
             .Builder()
             .setMediaId(song.id.toString())
-            .setUri(song.url)
+            // Use the server-resolved stream path (falls back to legacy url) so local
+            // and remote (proxied) songs both play from the right place (R1.2, R1.4).
+            .setUri(song.playbackUrl)
             .setMediaMetadata(
                 MediaMetadata
                     .Builder()
                     .setTitle(song.name)
                     .setArtist(song.artistName)
                     .setAlbumTitle(song.albumName)
-                    .setArtworkUri(Uri.parse(song.albumImageUrls.large))
+                    // Resolved artwork path, falling back to the legacy large image (R17).
+                    .setArtworkUri(Uri.parse(song.artworkUrl))
                     .build(),
             ).build()
 

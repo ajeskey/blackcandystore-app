@@ -61,6 +61,7 @@ class SnackbarUtil {
                 AlertMessage.DefinedMessages.INVALID_SERVER_ADDRESS -> R.string.invalid_server_address
                 AlertMessage.DefinedMessages.UNSUPPORTED_APP -> R.string.unsupported_app
                 AlertMessage.DefinedMessages.ADDED_TO_PLAYLIST -> R.string.added_to_playlist
+                AlertMessage.DefinedMessages.SONG_UNAVAILABLE -> R.string.song_unavailable
             }
     }
 }

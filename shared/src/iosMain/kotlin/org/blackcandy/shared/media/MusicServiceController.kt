@@ -132,7 +132,9 @@ actual class MusicServiceController(
 
         val asset =
             AVURLAsset(
-                uRL = NSURL(string = song.url),
+                // Use the server-resolved stream path (falls back to legacy url) so local
+                // and remote (proxied) songs both play from the right place (R1.2, R1.4).
+                uRL = NSURL(string = song.playbackUrl),
                 options =
                     mapOf(
                         "AVURLAssetHTTPHeaderFieldsKey" to
@@ -254,7 +256,8 @@ actual class MusicServiceController(
 
         MPNowPlayingInfoCenter.defaultCenter().nowPlayingInfo = nowPlayingInfo
 
-        updateAlbumArtwork(song.albumImageUrls.large)
+        // Resolved artwork path, falling back to the legacy large image (R17).
+        updateAlbumArtwork(song.artworkUrl)
     }
 
     private fun updateAlbumArtwork(urlString: String) {

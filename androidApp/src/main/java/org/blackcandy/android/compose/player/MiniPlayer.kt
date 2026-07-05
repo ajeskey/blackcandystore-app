@@ -53,7 +53,7 @@ fun MiniPlayer(
         ) {
             if (musicState.hasCurrentSong) {
                 AsyncImage(
-                    model = musicState.currentSong!!.albumImageUrls.small,
+                    model = musicState.currentSong!!.artworkUrlSmall,
                     contentDescription = stringResource(R.string.album_cover),
                     modifier =
                         Modifier

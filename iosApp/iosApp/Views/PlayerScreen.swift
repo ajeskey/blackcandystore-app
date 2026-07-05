@@ -132,7 +132,7 @@ struct PlayerScreen: View {
             }
         }
         .task(id: currentSong?.id) {
-            guard let urlString = currentSong?.albumImageUrls.small,
+            guard let urlString = currentSong?.artworkUrlSmall,
                   let url = URL(string: urlString) else {
                 albumImage = nil
                 return

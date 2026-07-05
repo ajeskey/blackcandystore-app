@@ -72,13 +72,21 @@ class PlayerViewModel(
     }
 
     fun playOn(songId: Long) {
-        val index =
-            uiState.value.musicState.playlist
-                .indexOfFirst { it.id == songId }
+        val playlist = uiState.value.musicState.playlist
+        val index = playlist.indexOfFirst { it.id == songId }
 
-        if (index != -1) {
-            musicServiceController.playOn(index)
+        if (index == -1) return
+
+        // Reject explicit selection of an unavailable song: notify and keep the
+        // current song unchanged (R1.6, R2.6).
+        if (!playlist[index].isAvailable) {
+            _uiState.update {
+                it.copy(alertMessage = AlertMessage.LocalizedString(AlertMessage.DefinedMessages.SONG_UNAVAILABLE))
+            }
+            return
         }
+
+        musicServiceController.playOn(index)
     }
 
     fun clearPlaylist() {

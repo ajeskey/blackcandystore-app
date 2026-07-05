@@ -23,7 +23,7 @@ struct FullPlayer: View {
                 Spacer()
             }
 
-            PlayerArt(imageURL: currentSong?.albumImageUrls.large)
+            PlayerArt(imageURL: currentSong?.artworkUrl)
                 .padding(.bottom, CustomStyle.spacing(.extraWide))
 
             PlayerInfo(currentSong: currentSong)

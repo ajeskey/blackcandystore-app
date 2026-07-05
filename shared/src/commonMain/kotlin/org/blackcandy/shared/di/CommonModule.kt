@@ -26,6 +26,7 @@ import org.blackcandy.shared.data.EncryptedDataSource
 import org.blackcandy.shared.data.FavoritePlaylistRepository
 import org.blackcandy.shared.data.PreferencesDataSource
 import org.blackcandy.shared.data.ServerAddressRepository
+import org.blackcandy.shared.data.SongRepository
 import org.blackcandy.shared.data.SystemInfoRepository
 import org.blackcandy.shared.data.UserRepository
 import org.blackcandy.shared.utils.BLACK_CANDY_USER_AGENT
@@ -51,6 +52,7 @@ val commonModule =
         single { UserRepository(get(), get(), get(), get()) }
         single { CurrentPlaylistRepository(get()) }
         single { FavoritePlaylistRepository(get()) }
+        single { SongRepository(get()) }
 
         viewModel { MainViewModel(get(), get()) }
         viewModel { LoginViewModel(get(), get(), get()) }

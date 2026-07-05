@@ -210,6 +210,17 @@
         }
       }
     },
+    "text.song_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This song is currently unavailable"
+          }
+        }
+      }
+    },
     "text.bad_request" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -37,6 +37,8 @@ interface BlackCandyService {
 
     suspend fun getSongsFromCurrentPlaylist(): ApiResponse<List<Song>>
 
+    suspend fun getSong(songId: Long): ApiResponse<Song>
+
     suspend fun addSongToFavorite(songId: Long): ApiResponse<Song>
 
     suspend fun removeSongFromFavorite(songId: Long): ApiResponse<Song>
@@ -125,6 +127,11 @@ class BlackCandyServiceImpl(
     override suspend fun getSongsFromCurrentPlaylist(): ApiResponse<List<Song>> =
         handleResponse {
             client.get("current_playlist/songs").body()
+        }
+
+    override suspend fun getSong(songId: Long): ApiResponse<Song> =
+        handleResponse {
+            client.get("songs/$songId").body()
         }
 
     override suspend fun addSongToFavorite(songId: Long): ApiResponse<Song> =
