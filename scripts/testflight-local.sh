@@ -23,6 +23,19 @@ export AWS_PROFILE
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 
+# The Xcode "Run Script" phase that builds the KMP shared framework runs Gradle, which
+# needs a valid JAVA_HOME. Pick one so the archive doesn't inherit a stale/invalid value
+# (e.g. an Android Studio JBR path that no longer exists).
+if [ -z "${JAVA_HOME:-}" ] || [ ! -x "${JAVA_HOME:-}/bin/java" ]; then
+  if _jh="$(/usr/libexec/java_home -v 17 2>/dev/null)" && [ -x "$_jh/bin/java" ]; then
+    export JAVA_HOME="$_jh"
+  elif [ -x /opt/homebrew/opt/openjdk@17/bin/java ]; then
+    export JAVA_HOME=/opt/homebrew/opt/openjdk@17
+  fi
+fi
+export PATH="${JAVA_HOME:+$JAVA_HOME/bin:}$PATH"
+echo "==> Using JAVA_HOME=${JAVA_HOME:-<default>}"
+
 echo "==> Verifying AWS session ($AWS_PROFILE)"
 aws sts get-caller-identity >/dev/null
 
@@ -41,6 +54,12 @@ export ASC_KEY_FILEPATH="$TMP_KEY"
 export BUNDLE_ID="${BUNDLE_ID:-$(grep '^BUNDLE_ID' iosApp/iosApp/Configuration/Config.xcconfig | sed 's/BUNDLE_ID *= *//')}"
 
 echo "==> Running Fastlane beta lane (build + upload to TestFlight)"
-bundle exec fastlane ios beta
+# Prefer a Bundler-managed Fastlane if it's set up; otherwise use a standalone
+# (e.g. Homebrew) install.
+if command -v bundle >/dev/null 2>&1 && bundle check >/dev/null 2>&1; then
+  bundle exec fastlane ios beta
+else
+  fastlane ios beta
+fi
 
 echo "==> Done. Check App Store Connect ▸ TestFlight for the processing build."
