@@ -39,8 +39,11 @@ echo "==> Using JAVA_HOME=${JAVA_HOME:-<default>}"
 echo "==> Verifying AWS session ($AWS_PROFILE)"
 aws sts get-caller-identity >/dev/null
 
-TMP_KEY="$(mktemp -t asc_key).p8"
-cleanup() { rm -f "$TMP_KEY"; }
+# Use a private temp DIR so nothing is left behind (a bare `mktemp` + ".p8" suffix
+# leaves an empty stub); the whole dir is removed on exit.
+TMP_DIR="$(mktemp -d -t asc_key)"
+TMP_KEY="$TMP_DIR/AuthKey.p8"
+cleanup() { rm -rf "$TMP_DIR"; }
 trap cleanup EXIT
 
 echo "==> Fetching App Store Connect credentials from Secrets Manager"
