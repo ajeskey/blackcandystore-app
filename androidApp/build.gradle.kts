@@ -10,7 +10,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "org.blackcandy.androidApp"
+        applicationId = "io.blackcandystore.app"
         minSdk = 28
         targetSdk = 35
         versionCode = 7

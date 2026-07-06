@@ -4,6 +4,39 @@ default_platform(:ios)
 XCODE_PROJECT = "iosApp/iosApp.xcodeproj".freeze
 XCODE_SCHEME = "iosApp".freeze
 
+ANDROID_AAB = "androidApp/build/outputs/bundle/release/androidApp-release.aab".freeze
+
+platform :android do
+  desc "Build a signed AAB and upload it to the Google Play internal (dev) testing track"
+  desc "Requires (see .env.example):"
+  desc "  ANDROID_KEYSTORE_PATH, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD"
+  desc "  and a Play service account key via GOOGLE_PLAY_JSON_KEY (path) or GOOGLE_PLAY_JSON_KEY_DATA (contents)."
+  lane :internal do
+    gradle(
+      task: "clean bundleRelease",
+      project_dir: ".",
+      properties: {
+        "android.injected.signing.store.file" => ENV.fetch("ANDROID_KEYSTORE_PATH"),
+        "android.injected.signing.store.password" => ENV.fetch("ANDROID_KEYSTORE_PASSWORD"),
+        "android.injected.signing.key.alias" => ENV.fetch("ANDROID_KEY_ALIAS"),
+        "android.injected.signing.key.password" => ENV.fetch("ANDROID_KEY_PASSWORD"),
+      },
+    )
+
+    upload_to_play_store(
+      track: "internal",
+      aab: ANDROID_AAB,
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY"],
+      json_key_data: ENV["GOOGLE_PLAY_JSON_KEY_DATA"],
+      release_status: "draft",
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+    )
+  end
+end
+
 platform :ios do
   desc "Frame iOS screenshots with device frames and titles"
   lane :frame do
