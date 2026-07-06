@@ -14,9 +14,14 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import org.koin.android.ext.android.get
+import org.koin.android.ext.android.inject
 
 class MusicService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
+
+    // Lazy so the engine graph is not built while the service is starting; only touched when a
+    // system transport command actually fires (R16.7).
+    private val playbackCoordinator: PlaybackCoordinator by inject()
 
     @OptIn(UnstableApi::class)
     override fun onCreate() {
@@ -54,7 +59,14 @@ class MusicService : MediaSessionService() {
                 .setHandleAudioBecomingNoisy(true)
                 .build()
 
-        mediaSession = MediaSession.Builder(this, player).build()
+        // Route system now-playing transport commands (lock screen / notification) to the
+        // PlaybackCoordinator's active engine when playback is not local, so they drive the active
+        // Cast_Session / Playback_Session rather than silent local playback (R16.7). Under LOCAL
+        // routing the wrapped ExoPlayer handles everything exactly as before.
+        val sessionPlayer =
+            CoordinatorForwardingPlayer(player) { playbackCoordinator }
+
+        mediaSession = MediaSession.Builder(this, sessionPlayer).build()
     }
 
     override fun onDestroy() {

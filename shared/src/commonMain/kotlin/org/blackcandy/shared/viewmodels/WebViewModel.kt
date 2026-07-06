@@ -49,6 +49,22 @@ class WebViewModel(
         }
     }
 
+    /**
+     * Refreshes the current playlist from the server so the player reflects the
+     * newly scoped content after the user changes the active library (R5.3).
+     *
+     * A failure is ignored so an already-playing queue is never disrupted by a
+     * transient refresh error; the existing songs simply remain in place.
+     */
+    fun refreshCurrentPlaylist() {
+        viewModelScope.launch {
+            when (val result = currentPlaylistRepository.getSongs()) {
+                is TaskResult.Success -> musicServiceController.updateSongs(result.data)
+                is TaskResult.Failure -> Unit
+            }
+        }
+    }
+
     fun playAlbum(albumId: Long) {
         viewModelScope.launch {
             when (val result = currentPlaylistRepository.replaceWithAlbumSongs(albumId)) {

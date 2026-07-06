@@ -7,6 +7,55 @@
       "properties": {
         "context": "modal"
       }
+    },
+    {
+      "patterns": [
+        "^/libraries$"
+      ],
+      "properties": {
+        "context": "default",
+        "comment": "Library management screen (R5.1/5.2): full-screen list, standard push."
+      }
+    },
+    {
+      "patterns": [
+        "^/libraries/active$",
+        "^/libraries/active/.*"
+      ],
+      "properties": {
+        "context": "modal",
+        "comment": "Active-library selection (R5.1/5.2): transient picker, presented modally."
+      }
+    },
+    {
+      "patterns": [
+        "^/library_invitations/new$",
+        "^/library_invitations/[^/]+$"
+      ],
+      "properties": {
+        "context": "modal",
+        "comment": "Invite generation and invite redemption (R5.1/5.2): transient forms, modal."
+      }
+    },
+    {
+      "patterns": [
+        "^/libraries/[^/]+/accesses$",
+        "^/library_accesses$"
+      ],
+      "properties": {
+        "context": "default",
+        "comment": "Access list (R5.1/5.2): management list, standard push."
+      }
+    },
+    {
+      "patterns": [
+        "^/settings/source_preference$",
+        "^/source_preference$"
+      ],
+      "properties": {
+        "context": "default",
+        "comment": "Source-preference setting (R5.1/5.2): settings screen, standard push."
+      }
     }
   ]
 }

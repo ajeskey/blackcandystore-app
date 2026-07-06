@@ -1,6 +1,10 @@
 package org.blackcandy.android
 
 import android.app.Application
+import android.util.Log
+import com.google.android.gms.cast.framework.CastContext
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import dev.hotwire.core.bridge.BridgeComponentFactory
 import dev.hotwire.core.bridge.KotlinXJsonConverter
 import dev.hotwire.core.config.Hotwire
@@ -11,6 +15,7 @@ import dev.hotwire.navigation.config.registerFragmentDestinations
 import org.blackcandy.android.bridge.AccountComponent
 import org.blackcandy.android.bridge.AlbumComponent
 import org.blackcandy.android.bridge.FlashComponent
+import org.blackcandy.android.bridge.LibraryComponent
 import org.blackcandy.android.bridge.PlaylistComponent
 import org.blackcandy.android.bridge.SearchComponent
 import org.blackcandy.android.bridge.SongsComponent
@@ -30,6 +35,7 @@ class MainApplication : Application() {
         super.onCreate()
 
         configureApp()
+        initializeCast()
 
         startKoin {
             androidLogger()
@@ -63,9 +69,42 @@ class MainApplication : Application() {
             BridgeComponentFactory("search", ::SearchComponent),
             BridgeComponentFactory("album", ::AlbumComponent),
             BridgeComponentFactory("flash", ::FlashComponent),
+            BridgeComponentFactory("library", ::LibraryComponent),
             BridgeComponentFactory("playlist", ::PlaylistComponent),
             BridgeComponentFactory("songs", ::SongsComponent),
             BridgeComponentFactory("theme", ::ThemeComponent),
         )
+    }
+
+    /**
+     * Eagerly initialize the Cast framework so Chromecast discovery/casting is ready when the user
+     * opens the Device_Picker (spec R9.1, R12.2). Initialization reads [CastOptionsProvider] via the
+     * manifest metadata.
+     *
+     * This is guarded because the Cast SDK hard-requires Google Play services: on devices where it
+     * is missing or out of date (many emulators, de-Googled ROMs), touching [CastContext] throws.
+     * We check availability first and swallow any failure so the app still launches and works with
+     * casting simply unavailable, rather than crashing on startup.
+     */
+    private fun initializeCast() {
+        try {
+            val availability =
+                GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this)
+
+            if (availability != ConnectionResult.SUCCESS) {
+                Log.i(TAG, "Google Play services unavailable ($availability); skipping Cast init.")
+                return
+            }
+
+            // Initializes CastContext on a background executor using CastOptionsProvider.
+            CastContext.getSharedInstance(this, Runnable::run)
+        } catch (e: Exception) {
+            // Casting is a non-critical enhancement; never let its setup block app launch.
+            Log.w(TAG, "Cast initialization failed; casting will be unavailable.", e)
+        }
+    }
+
+    companion object {
+        private const val TAG = "MainApplication"
     }
 }

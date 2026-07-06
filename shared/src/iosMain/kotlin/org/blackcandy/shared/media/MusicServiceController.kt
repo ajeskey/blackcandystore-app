@@ -2,14 +2,10 @@ package org.blackcandy.shared.media
 
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import org.blackcandy.shared.data.EncryptedDataSource
 import org.blackcandy.shared.models.Playlist
 import org.blackcandy.shared.models.Song
@@ -23,7 +19,6 @@ import platform.AVFoundation.AVPlayerTimeControlStatusWaitingToPlayAtSpecifiedRa
 import platform.AVFoundation.AVURLAsset
 import platform.AVFoundation.addPeriodicTimeObserverForInterval
 import platform.AVFoundation.currentItem
-import platform.AVFoundation.currentTime
 import platform.AVFoundation.pause
 import platform.AVFoundation.play
 import platform.AVFoundation.replaceCurrentItemWithPlayerItem
@@ -32,27 +27,11 @@ import platform.AVFoundation.timeControlStatus
 import platform.CoreMedia.CMTimeGetSeconds
 import platform.CoreMedia.CMTimeMake
 import platform.CoreMedia.CMTimeMakeWithSeconds
-import platform.Foundation.NSData
 import platform.Foundation.NSKeyValueObservingOptionNew
 import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSOperationQueue
 import platform.Foundation.NSURL
 import platform.Foundation.addObserver
-import platform.Foundation.dataWithContentsOfURL
-import platform.MediaPlayer.MPMediaItemArtwork
-import platform.MediaPlayer.MPMediaItemPropertyAlbumTitle
-import platform.MediaPlayer.MPMediaItemPropertyArtist
-import platform.MediaPlayer.MPMediaItemPropertyArtwork
-import platform.MediaPlayer.MPMediaItemPropertyPlaybackDuration
-import platform.MediaPlayer.MPMediaItemPropertyTitle
-import platform.MediaPlayer.MPNowPlayingInfoCenter
-import platform.MediaPlayer.MPNowPlayingInfoMediaTypeAudio
-import platform.MediaPlayer.MPNowPlayingInfoPropertyDefaultPlaybackRate
-import platform.MediaPlayer.MPNowPlayingInfoPropertyElapsedPlaybackTime
-import platform.MediaPlayer.MPNowPlayingInfoPropertyIsLiveStream
-import platform.MediaPlayer.MPNowPlayingInfoPropertyMediaType
-import platform.MediaPlayer.MPNowPlayingInfoPropertyPlaybackRate
-import platform.UIKit.UIImage
 import platform.darwin.NSObject
 import platform.darwin.NSObjectProtocol
 import platform.foundation.NSKeyValueObservingProtocol
@@ -68,6 +47,10 @@ actual class MusicServiceController(
     private var statusObserver: NSObject? = null
     private var playToEndObserver: NSObjectProtocol? = null
     private var timeObserver: Any? = null
+
+    // Owns the system now-playing integration (lock screen + MPNowPlayingInfoCenter), pointed at
+    // the PlaybackCoordinator's active engine (R16.7). Held so it is not garbage collected.
+    private var nowPlayingController: NowPlayingController? = null
 
     private var playlist = Playlist()
 
@@ -86,7 +69,12 @@ actual class MusicServiceController(
         player = AVPlayer()
 
         AudioSessionController.setup(this)
-        MediaRemoteController.setup(this)
+
+        // Point the system now-playing integration (lock-screen transport + MPNowPlayingInfoCenter)
+        // at the PlaybackCoordinator's active engine rather than this local player, so lock-screen
+        // controls drive the active Cast_Session / Playback_Session (R16.7). NowPlayingController
+        // resolves the coordinator lazily via Koin to avoid a construction cycle.
+        nowPlayingController = NowPlayingController().also { it.start() }
 
         apiToken = encryptedDataSource.getApiToken()!!
 
@@ -150,14 +138,10 @@ actual class MusicServiceController(
         player.pause()
         player.replaceCurrentItemWithPlayerItem(item)
         player.play()
-
-        updateNowPlayingInfo(song)
     }
 
     actual fun seekTo(seconds: Double) {
         player.seekToTime(CMTimeMakeWithSeconds(seconds, 1))
-        val rate = if (musicState.value.isPlaying) 1.0 else 0.0
-        updateNowPlayingPlaybackInfo(seconds, rate)
     }
 
     actual fun clearPlaylist() {
@@ -244,54 +228,6 @@ actual class MusicServiceController(
         _musicState.update { it.copy(playlist = playlist.orderedSongs) }
     }
 
-    private fun updateNowPlayingInfo(song: Song) {
-        val nowPlayingInfo = mutableMapOf<Any?, Any?>()
-
-        nowPlayingInfo[MPNowPlayingInfoPropertyMediaType] = MPNowPlayingInfoMediaTypeAudio
-        nowPlayingInfo[MPNowPlayingInfoPropertyIsLiveStream] = false
-        nowPlayingInfo[MPMediaItemPropertyTitle] = song.name
-        nowPlayingInfo[MPMediaItemPropertyArtist] = song.artistName
-        nowPlayingInfo[MPMediaItemPropertyAlbumTitle] = song.albumName
-        nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = song.duration
-
-        MPNowPlayingInfoCenter.defaultCenter().nowPlayingInfo = nowPlayingInfo
-
-        // Resolved artwork path, falling back to the legacy large image (R17).
-        updateAlbumArtwork(song.artworkUrl)
-    }
-
-    private fun updateAlbumArtwork(urlString: String) {
-        val url = NSURL(string = urlString)
-
-        CoroutineScope(Dispatchers.IO).launch {
-            val data = NSData.dataWithContentsOfURL(url) ?: return@launch
-            val image = UIImage(data = data)
-
-            val artwork = MPMediaItemArtwork(boundsSize = image.size) { _ -> image }
-
-            val nowPlayingInfo =
-                MPNowPlayingInfoCenter.defaultCenter().nowPlayingInfo?.toMutableMap()
-                    ?: mutableMapOf()
-            nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
-            MPNowPlayingInfoCenter.defaultCenter().nowPlayingInfo = nowPlayingInfo
-        }
-    }
-
-    private fun updateNowPlayingPlaybackInfo(
-        position: Double,
-        rate: Double,
-    ) {
-        val nowPlayingInfo =
-            MPNowPlayingInfoCenter.defaultCenter().nowPlayingInfo?.toMutableMap()
-                ?: mutableMapOf()
-
-        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = position
-        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = rate
-        nowPlayingInfo[MPNowPlayingInfoPropertyDefaultPlaybackRate] = 1.0
-
-        MPNowPlayingInfoCenter.defaultCenter().nowPlayingInfo = nowPlayingInfo
-    }
-
     private fun setupStatusObservers() {
         statusObserver =
             object : NSObject(), NSKeyValueObservingProtocol {
@@ -301,12 +237,9 @@ actual class MusicServiceController(
                     change: Map<Any?, *>?,
                     context: COpaquePointer?,
                 ) {
-                    val position = CMTimeGetSeconds(player.currentTime())
-
                     when (player.timeControlStatus) {
                         AVPlayerTimeControlStatusPaused -> {
                             _musicState.update { it.copy(playbackState = PlaybackState.PAUSED) }
-                            updateNowPlayingPlaybackInfo(position, 0.0)
                         }
 
                         AVPlayerTimeControlStatusWaitingToPlayAtSpecifiedRate -> {
@@ -315,7 +248,6 @@ actual class MusicServiceController(
 
                         AVPlayerTimeControlStatusPlaying -> {
                             _musicState.update { it.copy(playbackState = PlaybackState.PLAYING) }
-                            updateNowPlayingPlaybackInfo(position, 1.0)
                         }
                     }
                 }

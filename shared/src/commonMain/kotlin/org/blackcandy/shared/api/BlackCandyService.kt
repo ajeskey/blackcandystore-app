@@ -14,13 +14,19 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.URLBuilder
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.add
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 import org.blackcandy.shared.models.AuthenticationResponse
+import org.blackcandy.shared.models.OutputDevice
+import org.blackcandy.shared.models.PlaybackOp
+import org.blackcandy.shared.models.PlaybackSession
 import org.blackcandy.shared.models.Song
 import org.blackcandy.shared.models.SystemInfo
 import org.blackcandy.shared.models.User
@@ -38,6 +44,14 @@ interface BlackCandyService {
     suspend fun getSongsFromCurrentPlaylist(): ApiResponse<List<Song>>
 
     suspend fun getSong(songId: Long): ApiResponse<Song>
+
+    /**
+     * Fetch an independently authenticated, receiver-reachable Cast_Stream_Url for a Song from the
+     * Server's dedicated cast-url endpoint (spec R11.2). This is an optional part of the server
+     * contract, gated by [org.blackcandy.shared.models.ServerCapabilities.castStreamUrls]; callers
+     * degrade silently when it is absent (R18.2).
+     */
+    suspend fun getCastStreamUrl(songId: Long): ApiResponse<String>
 
     suspend fun addSongToFavorite(songId: Long): ApiResponse<Song>
 
@@ -61,6 +75,24 @@ interface BlackCandyService {
         currentSongId: Long?,
         location: String?,
     ): ApiResponse<Song>
+
+    suspend fun getOutputDevices(): ApiResponse<List<OutputDevice>>
+
+    suspend fun getPlaybackSession(): ApiResponse<PlaybackSession>
+
+    suspend fun putPlaybackSession(
+        deviceIds: List<String>,
+        currentSongId: Long?,
+        devicePassword: String?,
+    ): ApiResponse<PlaybackSession>
+
+    suspend fun controlPlaybackSession(
+        op: PlaybackOp,
+        volume: Double?,
+        deviceId: String?,
+    ): ApiResponse<PlaybackSession>
+
+    suspend fun setPlaybackMode(routing: String): ApiResponse<Unit>
 }
 
 class BlackCandyServiceImpl(
@@ -134,6 +166,23 @@ class BlackCandyServiceImpl(
             client.get("songs/$songId").body()
         }
 
+    override suspend fun getCastStreamUrl(songId: Long): ApiResponse<String> =
+        handleResponse {
+            // ASSUMPTION (pending server-contract confirmation): the dedicated cast-url endpoint is
+            // `GET songs/{id}/cast_stream_url` and returns `{ "cast_stream_url": "<url>" }`, matching
+            // the `songs/{id}` convention above and the snake_case JSON contract. A missing/empty
+            // field is treated as "no cast url" via an ApiException so the caller degrades silently.
+            val response = client.get("songs/$songId/cast_stream_url")
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            val castStreamUrl = body["cast_stream_url"]?.jsonPrimitive?.contentOrNull
+
+            if (castStreamUrl.isNullOrEmpty()) {
+                throw ApiException(code = null, message = "Missing cast_stream_url in response")
+            }
+
+            castStreamUrl
+        }
+
     override suspend fun addSongToFavorite(songId: Long): ApiResponse<Song> =
         handleResponse {
             client
@@ -205,6 +254,78 @@ class BlackCandyServiceImpl(
                             if (location != null) {
                                 put("location", location)
                             }
+                        },
+                    )
+                }.body()
+        }
+
+    override suspend fun getOutputDevices(): ApiResponse<List<OutputDevice>> =
+        handleResponse {
+            client.get("output_devices").body()
+        }
+
+    override suspend fun getPlaybackSession(): ApiResponse<PlaybackSession> =
+        handleResponse {
+            client.get("playback_session").body()
+        }
+
+    override suspend fun putPlaybackSession(
+        deviceIds: List<String>,
+        currentSongId: Long?,
+        devicePassword: String?,
+    ): ApiResponse<PlaybackSession> =
+        handleResponse {
+            client
+                .put("playback_session") {
+                    setBody(
+                        buildJsonObject {
+                            putJsonArray("device_ids") {
+                                deviceIds.forEach { add(it) }
+                            }
+
+                            if (currentSongId != null) {
+                                put("current_song_id", currentSongId)
+                            }
+
+                            if (devicePassword != null) {
+                                put("device_password", devicePassword)
+                            }
+                        },
+                    )
+                }.body()
+        }
+
+    override suspend fun controlPlaybackSession(
+        op: PlaybackOp,
+        volume: Double?,
+        deviceId: String?,
+    ): ApiResponse<PlaybackSession> =
+        handleResponse {
+            client
+                .post("playback_session/control") {
+                    setBody(
+                        buildJsonObject {
+                            put("op", op.value)
+
+                            if (volume != null) {
+                                put("volume", volume)
+                            }
+
+                            if (deviceId != null) {
+                                put("device_id", deviceId)
+                            }
+                        },
+                    )
+                }.body()
+        }
+
+    override suspend fun setPlaybackMode(routing: String): ApiResponse<Unit> =
+        handleResponse {
+            client
+                .put("playback_mode") {
+                    setBody(
+                        buildJsonObject {
+                            put("routing", routing)
                         },
                     )
                 }.body()

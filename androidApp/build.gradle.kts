@@ -73,6 +73,10 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.session)
     implementation(libs.androidx.media3.datasource.okhttp)
+    implementation(libs.androidx.media3.cast)
+    // Cast SDK: required for the CastOptionsProvider referenced by the manifest and the
+    // CastContext initialization in MainApplication (Chromecast client casting, R9.1/R12.2).
+    implementation(libs.google.play.services.cast.framework)
 
     implementation(libs.google.material)
     implementation(libs.google.accompanist.themeadapter.material3)

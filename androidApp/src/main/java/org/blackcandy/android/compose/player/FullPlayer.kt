@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import org.blackcandy.android.R
 import org.blackcandy.shared.media.PlaybackMode
+import org.blackcandy.shared.media.PlaybackRouting
 import org.blackcandy.shared.models.Song
 
 @Composable
@@ -36,6 +37,10 @@ fun FullPlayer(
     onModeSwitchButtonClicked: () -> Unit,
     onFavoriteButtonClicked: () -> Unit,
     onPlaylistButtonClicked: (() -> Unit)? = null,
+    activeRouting: PlaybackRouting = PlaybackRouting.LOCAL,
+    activeDeviceName: String? = null,
+    isDevicePickerAvailable: Boolean = false,
+    onDevicePickerButtonClicked: (() -> Unit)? = null,
 ) {
     if (inCompactHeight) {
         PlayerHorizontalLayout(
@@ -53,6 +58,10 @@ fun FullPlayer(
             onModeSwitchButtonClicked = onModeSwitchButtonClicked,
             onFavoriteButtonClicked = onFavoriteButtonClicked,
             onPlaylistButtonClicked = onPlaylistButtonClicked,
+            activeRouting = activeRouting,
+            activeDeviceName = activeDeviceName,
+            isDevicePickerAvailable = isDevicePickerAvailable,
+            onDevicePickerButtonClicked = onDevicePickerButtonClicked,
         )
     } else {
         PlayerVerticalLayout(
@@ -72,6 +81,10 @@ fun FullPlayer(
             onFavoriteButtonClicked = onFavoriteButtonClicked,
             onPlaylistButtonClicked = onPlaylistButtonClicked,
             isExpandedHeight = windowSizeClass.heightSizeClass == WindowHeightSizeClass.Expanded,
+            activeRouting = activeRouting,
+            activeDeviceName = activeDeviceName,
+            isDevicePickerAvailable = isDevicePickerAvailable,
+            onDevicePickerButtonClicked = onDevicePickerButtonClicked,
         )
     }
 }
@@ -92,6 +105,10 @@ fun PlayerHorizontalLayout(
     onModeSwitchButtonClicked: () -> Unit,
     onFavoriteButtonClicked: () -> Unit,
     onPlaylistButtonClicked: (() -> Unit)? = null,
+    activeRouting: PlaybackRouting = PlaybackRouting.LOCAL,
+    activeDeviceName: String? = null,
+    isDevicePickerAvailable: Boolean = false,
+    onDevicePickerButtonClicked: (() -> Unit)? = null,
 ) {
     Row(
         modifier =
@@ -115,6 +132,12 @@ fun PlayerHorizontalLayout(
                 horizontalAlignment = Alignment.Start,
             ) {
                 PlayerInfo(currentSong = currentSong)
+
+                RoutingIndicator(
+                    modifier = Modifier.padding(top = dimensionResource(R.dimen.padding_narrow)),
+                    activeRouting = activeRouting,
+                    deviceName = activeDeviceName,
+                )
 
                 PlayerControl(
                     modifier =
@@ -144,6 +167,9 @@ fun PlayerHorizontalLayout(
                 onModeSwitchButtonClicked = onModeSwitchButtonClicked,
                 onFavoriteButtonClicked = onFavoriteButtonClicked,
                 onPlaylistButtonClicked = onPlaylistButtonClicked,
+                isDevicePickerAvailable = isDevicePickerAvailable,
+                activeRouting = activeRouting,
+                onDevicePickerButtonClicked = onDevicePickerButtonClicked,
             )
         }
     }
@@ -167,6 +193,10 @@ fun PlayerVerticalLayout(
     onFavoriteButtonClicked: () -> Unit,
     onPlaylistButtonClicked: (() -> Unit)? = null,
     isExpandedHeight: Boolean,
+    activeRouting: PlaybackRouting = PlaybackRouting.LOCAL,
+    activeDeviceName: String? = null,
+    isDevicePickerAvailable: Boolean = false,
+    onDevicePickerButtonClicked: (() -> Unit)? = null,
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -191,6 +221,12 @@ fun PlayerVerticalLayout(
                 currentSong = currentSong,
                 center = true,
                 modifier = Modifier.padding(top = dimensionResource(R.dimen.padding_medium)),
+            )
+
+            RoutingIndicator(
+                modifier = Modifier.padding(top = dimensionResource(R.dimen.padding_narrow)),
+                activeRouting = activeRouting,
+                deviceName = activeDeviceName,
             )
 
             PlayerControl(
@@ -226,6 +262,9 @@ fun PlayerVerticalLayout(
             onModeSwitchButtonClicked = onModeSwitchButtonClicked,
             onFavoriteButtonClicked = onFavoriteButtonClicked,
             onPlaylistButtonClicked = onPlaylistButtonClicked,
+            isDevicePickerAvailable = isDevicePickerAvailable,
+            activeRouting = activeRouting,
+            onDevicePickerButtonClicked = onDevicePickerButtonClicked,
         )
     }
 }

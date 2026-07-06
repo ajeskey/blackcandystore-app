@@ -25,3 +25,9 @@ iosApp.xcconfig
 *.zip
 *.ipa
 Config.xcconfig
+
+# App Store Connect API private keys
+*.p8
+
+# Xcode build output / DerivedData
+/iosApp/build/

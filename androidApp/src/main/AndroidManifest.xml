@@ -17,6 +17,13 @@
         android:theme="@style/Theme.BlackCandy"
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
+
+        <!-- Google Cast SDK: points the framework at CastOptionsProvider so CastContext can be
+             initialized for Chromecast client casting (spec R9.1, R12.2). -->
+        <meta-data
+            android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
+            android:value="org.blackcandy.android.CastOptionsProvider" />
+
         <activity
             android:name=".LoginActivity"
             android:exported="true"

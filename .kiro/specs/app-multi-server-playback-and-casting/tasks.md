@@ -110,20 +110,21 @@ Delivers cross-server streaming with no external SDKs. Fully testable.
 **Requirements: 5.**
 Small; leverages Hotwire.
 
-- [ ] 8. Route the server's new library/sharing screens
-  - [ ] 8.1 Add `path-configuration.json` rules on both platforms
+- [x] 8. Route the server's new library/sharing screens
+  - [x] 8.1 Add `path-configuration.json` rules on both platforms
     - Add rules for library management, active-library selection, invites, redemptions, access lists, and source-preference paths using existing `default`/`modal`/`replace_root` conventions (Android `androidApp/src/main/assets/json/path-configuration.json` and `iosApp/iosApp/path-configuration.json`)
     - _Requirements: 5.1, 5.2, 5.5_
 
-  - [ ] 8.2 Add bridge components for any native surfaces
+  - [x] 8.2 Add bridge components for any native surfaces
     - Where the server emits Hotwire bridge events for a native picker/sheet on these screens, add matching bridge components on Android and iOS following the existing component pattern
+    - NOTE: No new bridge components were added. R5.4 is conditional ("WHERE a Server screen needs a native surface ... through a Hotwire bridge event"). This app repo contains no server code, and the server contract does not define any new bridge event for the library/sharing/source-preference screens — the design's "Open Contract Dependencies" list (items 1–5) includes none, and a repo-wide search found no bridge-event names for these screens. Hotwire only dispatches to a native `BridgeComponent` whose `name` matches a server-side Stimulus bridge component that `connect`s; inventing a native component for an event the server never emits would be dead code, which the design explicitly warns against ("add bridge components only where the server emits bridge events"). Existing global components already cover cross-screen surfaces on the new screens automatically: `flash` (flash messages), `theme` (theme sync), `account` (account menu), and `search`. The extension point is documented: when the server introduces a bridge event for one of these screens, add a matching `BridgeComponent` under `androidApp/.../bridge/` registered in `MainApplication.kt` and `iosApp/.../Bridge/` registered in `AppDelegate.swift`, following the existing pattern. Active-library-change detection (which may or may not arrive as a bridge event) is handled separately by task 8.3.
     - _Requirements: 5.4_
 
-  - [ ] 8.3 Refresh the queue on active-library change
+  - [x] 8.3 Refresh the queue on active-library change
     - Detect active-library change (bridge event or navigation signal) and refresh the current playlist so the player reflects newly scoped content
     - _Requirements: 5.3_
 
-- [ ] 9. Phase 2 checkpoint
+- [x] 9. Phase 2 checkpoint
   - Verify new server screens present correctly and library switching refreshes playback context.
 
 ---
@@ -132,67 +133,67 @@ Small; leverages Hotwire.
 **Requirements: 6 (server side), 7, 13, 14, 16 (core). Properties: 4 (routing half).**
 API-only; delivers "stream from server to devices." No cast SDK.
 
-- [ ] 10. Output device + session models and services
-  - [ ] 10.1 Add device/session models and service methods
+- [x] 10. Output device + session models and services
+  - [x] 10.1 Add device/session models and service methods
     - Add `OutputDevice`, `OutputDeviceProtocol`, `DeviceOrigin`, `PlaybackSession`; add `getOutputDevices`, `getPlaybackSession`, `putPlaybackSession`, `controlPlaybackSession`, `setPlaybackMode` to `BlackCandyService`
     - _Requirements: 6.2, 6.6, 7.3, 13.3, 14.1, 14.2_
 
-  - [ ] 10.2 Add `ServerDeviceRepository` and `PlaybackSessionRepository`
+  - [x] 10.2 Add `ServerDeviceRepository` and `PlaybackSessionRepository`
     - Wrap the new service methods; empty/failed device list → empty "no devices" state, not an error; register in Koin `commonModule`
     - _Requirements: 6.5, 14.4, 18.2_
 
-- [ ] 11. PlaybackEngine abstraction and coordinator
-  - [ ] 11.1 Define `PlaybackEngine`, `EngineStatus`, `PlaybackTarget`, `PlaybackRouting`
+- [x] 11. PlaybackEngine abstraction and coordinator
+  - [x] 11.1 Define `PlaybackEngine`, `EngineStatus`, `PlaybackTarget`, `PlaybackRouting`
     - Add the interface and value types in `commonMain` per the design
     - _Requirements: 7.1, 7.4_
 
-  - [ ] 11.2 Implement `LocalPlaybackEngine` wrapping `MusicServiceController`
+  - [x] 11.2 Implement `LocalPlaybackEngine` wrapping `MusicServiceController`
     - Adapt the existing controller behind the interface so local playback is unchanged
     - _Requirements: 7.1, 7.7, 18.1_
 
-  - [ ] 11.3 Implement `PlaybackCoordinator` with routing exclusivity
+  - [x] 11.3 Implement `PlaybackCoordinator` with routing exclusivity
     - Hold the active routing/engine, expose a unified `PlaybackStatus`, and implement `selectTarget` to deactivate the current engine (retain position), activate the next, and transfer queue/position
     - _Requirements: 7.2, 7.4, 7.5, 7.6, 15.1, 15.2, 15.3, 15.4, 15.5_
 
-  - [ ] 11.4 Write property test for routing exclusivity
+  - [x] 11.4 Write property test for routing exclusivity
     - `# Feature: app-multi-server-playback-and-casting, Property 4: Routing exclusivity`
     - Generate target-selection sequences (local/cast/server); assert at most one active engine and prior engine deactivated before the next activates
     - **Validates: Requirements 7.4, 15.1, 15.5** (Property 4), min 100 iterations
     - _Requirements: 7.4, 15.1, 15.5_
 
-- [ ] 12. Server-driven playback engine
-  - [ ] 12.1 Implement `ServerPlaybackEngine` with Session_Observation
+- [x] 12. Server-driven playback engine
+  - [x] 12.1 Implement `ServerPlaybackEngine` with Session_Observation
     - On activate: sync app queue to server current playlist, `putPlaybackSession(devices, currentSongId, password?)`; transport ops via `controlPlaybackSession`; poll `getPlaybackSession` every 5s and after each op, mapping to `EngineStatus`; detach local audio
     - Propagate queue edits to the server current playlist while active
     - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 14.1, 14.2, 14.3, 14.4, 14.6, 14.7_
 
-  - [ ] 12.2 Wire playback-mode parity reporting
+  - [x] 12.2 Wire playback-mode parity reporting
     - Report selected routing via `setPlaybackMode` without blocking casting/remote control on failure
     - _Requirements: 7.3_
 
-  - [ ] 12.3 Write integration tests for server-playback control + polling
+  - [x] 12.3 Write integration tests for server-playback control + polling
     - With a Ktor `MockEngine` stub: verify create/update session, play/pause/stop/volume, polling adoption of server state, no-device error (14.5), and last-device stop (14.6)
     - Integration tests (NOT property-based) — network path
     - _Requirements: 14.1, 14.2, 14.4, 14.5, 14.6_
 
-- [ ] 13. Device picker and player UI (core)
-  - [ ] 13.1 Add `DevicePickerViewModel` and the two device sections
+- [x] 13. Device picker and player UI (core)
+  - [x] 13.1 Add `DevicePickerViewModel` and the two device sections
     - Combine `ServerDeviceRepository` output (and, later, local devices) into a UI model with separate server/local sections gated by capabilities; selection drives `PlaybackCoordinator.selectTarget`
     - _Requirements: 6.1, 6.5, 6.7, 7.2, 16.1_
 
-  - [ ] 13.2 Add the Device_Picker entry point and routing indicators
+  - [x] 13.2 Add the Device_Picker entry point and routing indicators
     - Add a cast/devices control to Android `PlayerActions`/`PlayerScreen` and iOS `PlayerActions.swift`/`FullPlayer.swift`, shown only when capable; indicate active routing + device name; keep repeat/shuffle control independent
     - _Requirements: 16.1, 16.2, 16.3, 16.5, 16.6_
 
-  - [ ] 13.3 Route `PlayerViewModel` through the coordinator
+  - [x] 13.3 Route `PlayerViewModel` through the coordinator
     - Point `PlayerViewModel` transport actions and state at `PlaybackCoordinator` instead of `MusicServiceController` directly; mark unavailable queue songs disabled-but-listed in playlist UIs
     - _Requirements: 14.3, 16.3, 16.4_
 
-  - [ ] 13.4 Collect AirPlay password for server_playback
+  - [x] 13.4 Collect AirPlay password for server_playback
     - Prompt for a device password when a selected server AirPlay device requires one and pass it to `putPlaybackSession`; surface the server's auth error
     - _Requirements: 14.7_
 
-- [ ] 14. Phase 3 checkpoint
+- [x] 14. Phase 3 checkpoint
   - Verify device list, routing selection, and server-driven play/pause/stop/volume with live state on a capable server.
 
 ---
@@ -201,50 +202,50 @@ API-only; delivers "stream from server to devices." No cast SDK.
 **Requirements: 6 (local), 9, 10, 11, 12. Properties: 3, 5.**
 HIGH RISK: external Cast SDKs (`androidx.media3:media3-cast` on Android, GoogleCast on iOS).
 
-- [ ] 15. Cast session state machine and local device discovery
-  - [ ] 15.1 Implement `CastSessionMachine` pure state logic
+- [x] 15. Cast session state machine and local device discovery
+  - [x] 15.1 Implement `CastSessionMachine` pure state logic
     - Implement `{stopped,playing,paused}` transitions for play/resume/pause/stop/volume, reachability rejection, disconnect→stopped, 30s timeout, resume-after-pause retaining song/position
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9_
 
-  - [ ] 15.2 Write property test for cast session invariant
+  - [x] 15.2 Write property test for cast session invariant
     - `# Feature: app-multi-server-playback-and-casting, Property 3: Cast session state invariant`
     - Generate random control sequences; assert state always valid and resume-after-pause returns to `playing` with retained song/position
     - **Validates: Requirements 10.8, 10.9** (Property 3), min 100 iterations
     - _Requirements: 10.8, 10.9_
 
-  - [ ] 15.3 Implement `LocalDeviceDiscovery` (expect/actual)
+  - [x] 15.3 Implement `LocalDeviceDiscovery` (expect/actual)
     - `expect` in `commonMain`; Android `actual` = Chromecast via Cast SDK MediaRouter; iOS `actual` = Chromecast (GoogleCast) + AirPlay (`AVRouteDetector`); classify each device, remove on drop-out
     - _Requirements: 6.1, 6.3, 6.4, 6.6, 12.1, 12.2, 12.4_
 
-  - [ ] 15.4 Write property test for capability/platform gating
+  - [x] 15.4 Write property test for capability/platform gating
     - `# Feature: app-multi-server-playback-and-casting, Property 5: Capability and platform gating`
     - Generate capability + platform combinations; assert a feature/protocol is offered iff supported (AirPlay⇒iOS, Chromecast⇒both)
     - **Validates: Requirements 4.2, 4.6, 12.1, 12.2** (Property 5), min 100 iterations
     - _Requirements: 4.2, 4.6, 12.1, 12.2_
 
-- [ ] 16. Cast stream URL handling
-  - [ ] 16.1 Implement Cast_Stream_Url resolution
+- [x] 16. Cast stream URL handling
+  - [x] 16.1 Implement Cast_Stream_Url resolution
     - Add `getCastStreamUrl(songId)` service method; `castUrlOrNull()` prefers server `castStreamUrl`, then a dedicated endpoint, then reachable `playbackUrl`; treat none as not-castable without loading an unreachable URL; do not leak long-lived credentials
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6_
 
-- [ ] 17. Chromecast engine
-  - [ ] 17.1 Implement `ChromecastEngine` (expect/actual)
+- [x] 17. Chromecast engine
+  - [x] 17.1 Implement `ChromecastEngine` (expect/actual)
     - Android `actual`: Media3 `CastPlayer` loading a `MediaItem` from `castUrlOrNull()`, adapting `CastPlayer` state to `EngineStatus` via `CastSessionMachine`
     - iOS `actual`: `GCKSessionManager` + `GCKRemoteMediaClient` loading `GCKMediaInformation`; controller-only, receiver fetches URL
     - Register in the coordinator only where supported (Android + iOS)
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 11.3_
 
-  - [ ] 17.2 Add Cast SDK dependencies and initialization
+  - [x] 17.2 Add Cast SDK dependencies and initialization
     - Add `media3-cast` + `play-services-cast-framework` (Android) and GoogleCast (iOS, SPM/CocoaPods) in `libs.versions.toml`/build files; initialize the Cast context and receiver app id
     - Medium risk: external SDK setup and app-id configuration
     - _Requirements: 9.1, 12.2_
 
-  - [ ] 17.3 Write integration/manual tests for Chromecast
+  - [x] 17.3 Write integration/manual tests for Chromecast
     - Against an emulated/real receiver: verify load from Cast_Stream_Url, play/pause/stop/volume, disconnect handling, and not-castable fallback; state logic itself is covered by Property 3
     - Integration/manual (NOT property-based) — external SDK path
     - _Requirements: 9.1, 9.2, 9.5, 9.6, 11.4_
 
-- [ ] 18. Phase 4 checkpoint
+- [x] 18. Phase 4 checkpoint
   - Verify Chromecast casting of local and remote (proxied) songs on both platforms, plus graceful not-castable behavior.
 
 ---
@@ -252,27 +253,27 @@ HIGH RISK: external Cast SDKs (`androidx.media3:media3-cast` on Android, GoogleC
 ## Phase 5 — AirPlay client casting (iOS), now-playing, exclusivity finalize
 **Requirements: 8, 15, 16.7.**
 
-- [ ] 19. AirPlay engine (iOS)
-  - [ ] 19.1 Implement `AirPlayEngine` (iOS only)
+- [x] 19. AirPlay engine (iOS)
+  - [x] 19.1 Implement `AirPlayEngine` (iOS only)
     - Reuse the local `AVPlayer`; present `AVRoutePickerView` for device + password selection; route output to the selected AirPlay device keeping the phone as audio source and using `playbackUrl` with existing auth headers; handle route loss via the disconnect path
     - Do not register AirPlay client-cast on Android
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 12.1_
 
-  - [ ] 19.2 Write integration/manual tests for AirPlay routing
+  - [x] 19.2 Write integration/manual tests for AirPlay routing
     - On an iOS device with an AirPlay target: verify audio routes, password handled by the system picker, and route-loss handling; state logic covered by Property 3
     - Integration/manual (NOT property-based) — device path
     - _Requirements: 8.1, 8.3, 8.4_
 
-- [ ] 20. Now-playing and final exclusivity polish
-  - [ ] 20.1 Route now-playing/lock-screen controls to the active engine
+- [x] 20. Now-playing and final exclusivity polish
+  - [x] 20.1 Route now-playing/lock-screen controls to the active engine
     - Point iOS `MPNowPlayingInfoCenter`/`MediaRemoteController` and Android MediaSession transport commands at the coordinator's active engine so lock-screen controls drive the cast/server session
     - _Requirements: 16.7_
 
-  - [ ] 20.2 Finalize routing switch transitions
+  - [x] 20.2 Finalize routing switch transitions
     - Verify switching client_cast ↔ server_playback ↔ local ends the prior session and resumes from retained position; no simultaneous engines
     - _Requirements: 15.2, 15.3, 15.4, 15.5_
 
-- [ ] 21. Final checkpoint
+- [x] 21. Final checkpoint
   - Build shared + both apps, run all property and integration tests, and validate the full routing matrix end to end.
 
 ## Notes

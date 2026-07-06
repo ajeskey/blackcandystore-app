@@ -6,10 +6,15 @@ on:
       - 'ios/v*'
 
 jobs:
-  build:
+  testflight:
     runs-on: macos-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
       - name: Determine release type
         id: release_type
         run: |
@@ -21,6 +26,37 @@ jobs:
           else
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Ruby (Fastlane)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Create signing config
+        run: |
+          cat > iosApp/iosApp/Configuration/Config.xcconfig <<EOF
+          BUNDLE_ID = ${{ secrets.IOS_BUNDLE_ID }}
+          TEAM_ID = ${{ secrets.IOS_TEAM_ID }}
+          APP_NAME = Black Candy
+          EOF
+
+      - name: Build and upload to TestFlight
+        env:
+          BUNDLE_ID: ${{ secrets.IOS_BUNDLE_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
+          ASC_KEY_CONTENT_BASE64: 'true'
+          # Use the CI run number to guarantee a monotonically increasing, unique build number.
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: bundle exec fastlane ios beta
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

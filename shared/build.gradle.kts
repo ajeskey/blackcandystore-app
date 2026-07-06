@@ -76,6 +76,9 @@ kotlin {
             dependencies {
                 implementation(libs.kotlin.test)
                 implementation(libs.koin.test)
+                implementation(libs.ktor.client.mock)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.serialization.kotlinx.json)
             }
         }
 
@@ -88,6 +91,11 @@ kotlin {
                 implementation(libs.androidx.media3.exoplayer)
                 implementation(libs.androidx.media3.session)
                 implementation(libs.androidx.media3.datasource.okhttp)
+                // Chromecast client casting (task 17.1 ChromecastEngine + LocalDeviceDiscovery):
+                // media3-cast provides CastPlayer; play-services-cast-framework provides
+                // CastContext / SessionManager / MediaRouter used to discover and drive receivers.
+                implementation(libs.androidx.media3.cast)
+                implementation(libs.google.play.services.cast.framework)
                 implementation(libs.androidx.recyclerview)
                 implementation(libs.koin.android)
                 implementation(libs.androidx.security.crypto)

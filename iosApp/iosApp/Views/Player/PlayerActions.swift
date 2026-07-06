@@ -7,9 +7,13 @@ struct PlayerActions: View {
     let onModeSwitchButtonClicked: (() -> Void)
     let onFavoriteButtonClicked: (() -> Void)
     let onPlaylistButtonClicked: (() -> Void)?
+    var activeRouting: PlaybackRouting = .local
+    var isDevicePickerAvailable: Bool = false
+    var onDevicePickerButtonClicked: (() -> Void)?
 
     var body: some View {
         HStack {
+            // Repeat/shuffle control — independent of the Playback_Routing selection (R16.6).
             Button(
                 action: {
                     onModeSwitchButtonClicked()
@@ -21,6 +25,23 @@ struct PlayerActions: View {
             .padding(CustomStyle.spacing(.narrow))
             .background(playbackMode == .noRepeat ? .clear : .accentColor)
             .cornerRadius(CustomStyle.cornerRadius(.medium))
+
+            // Device_Picker entry point — shown only when a server reports output devices or the
+            // platform can client-cast (R16.1).
+            if isDevicePickerAvailable, let onDevicePickerButtonClicked {
+                Spacer()
+
+                Button(
+                    action: {
+                        onDevicePickerButtonClicked()
+                    },
+                    label: {
+                        Image(systemName: activeRouting == .local ? "airplayaudio" : "airplayaudio.circle.fill")
+                            .tint(activeRouting == .local ? .primary : .accentColor)
+                    }
+                )
+                .padding(CustomStyle.spacing(.narrow))
+            }
 
             Spacer()
 

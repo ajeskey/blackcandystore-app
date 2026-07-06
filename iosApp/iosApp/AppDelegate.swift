@@ -10,6 +10,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         configureHotwire()
 
+        // Initialize the Chromecast context for client casting (spec R9.1, R12.2). No-op until the
+        // GoogleCast SDK is added to the project — see CastConfiguration.swift.
+        CastConfiguration.configure()
+
         return true
     }
 
@@ -48,6 +52,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             ThemeComponent.self,
             FlashComponent.self,
             AlbumComponent.self,
+            LibraryComponent.self,
             PlaylistComponent.self,
             SongsComponent.self
         ])

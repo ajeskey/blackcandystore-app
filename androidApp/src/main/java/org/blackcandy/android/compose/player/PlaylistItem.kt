@@ -71,16 +71,28 @@ fun PlaylistItem(
             }
         },
     ) {
+        // Unavailable songs stay listed in place but are visually dimmed and cannot be selected
+        // for playback (R16.4). Swipe-to-remove and drag-to-reorder remain enabled so the queue
+        // can still be edited (R2.3).
+        val isAvailable = song.isAvailable
+        val disabledAlpha = 0.38f
+
         ListItem(
             modifier =
                 Modifier
                     .clickable(
+                        enabled = isAvailable,
                         onClick = { onClicked(song.id) },
                     ),
             headlineContent = {
                 Text(
                     text = song.name,
-                    color = if (isCurrent) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                    color =
+                        when {
+                            !isAvailable -> MaterialTheme.colorScheme.onSurface.copy(alpha = disabledAlpha)
+                            isCurrent -> MaterialTheme.colorScheme.primary
+                            else -> Color.Unspecified
+                        },
                     fontWeight = if (isCurrent) FontWeight.Bold else null,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -88,7 +100,18 @@ fun PlaylistItem(
             },
             supportingContent = {
                 Text(
-                    text = song.artistName,
+                    text =
+                        if (isAvailable) {
+                            song.artistName
+                        } else {
+                            stringResource(R.string.song_unavailable_label)
+                        },
+                    color =
+                        if (isAvailable) {
+                            Color.Unspecified
+                        } else {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = disabledAlpha)
+                        },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

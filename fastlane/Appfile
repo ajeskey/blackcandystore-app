@@ -1,0 +1,6 @@
+# App identifier for the iOS app. Kept in sync with iosApp/.../Configuration/Config.xcconfig
+# (BUNDLE_ID) and the App Store Connect record.
+app_identifier(ENV["BUNDLE_ID"] || "org.blackcandy.iosApp")
+
+# Authentication for App Store Connect is provided at runtime via an API key
+# (see the `beta` lane in the Fastfile and .env.example). No Apple ID / password needed.
